@@ -10,6 +10,7 @@ app.use(express.json());
 const MessageController = require("./controller/msg.controller")
 const UserController = require("./controller/user.controller")
 const isAuthenticated = require('./middleware/isAuthenticated');
+const Messages = require('./models/Messages');
 const PORT = 2222;
 
 
@@ -89,7 +90,7 @@ app.delete('/messages',isAuthenticated,MessageController.deleteAllMessages);
 app.delete('/messages_B_U',isAuthenticated,MessageController.deleteMessagesBetweenUsers);
 
 
-app.delete("/dm",isAuthenticated,async (req, res) => {
+app.delete("/dm",async (req, res) => {
   try {
     const result = await Messages.deleteMany({});
     res.status(200).json({ message: "All Messages have been deleted.", result });
