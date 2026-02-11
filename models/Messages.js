@@ -2,37 +2,34 @@ const mongoose = require('mongoose');
 
 const MessageSchema = new mongoose.Schema({
   from: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  fromimg: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  fromname: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   to: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  toimg: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   message: {
     type: String,
     trim: true
   },
-  updated: {
+  iv: {
     type: String,
     trim: true
+  },
+  senderEncryptedKey: {
+    type: String,
+    trim: true
+  },
+  recipientEncryptedKey: {
+    type: String,
+    trim: true
+  },
+  updated: {
+    type: Boolean,
+    default: false
   },
   readorno: {
     type: Boolean,

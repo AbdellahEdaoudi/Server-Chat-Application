@@ -1,24 +1,26 @@
 const Messages = require('../models/Messages');
+const User = require('../models/User');
 
-// Get all messages
+// Get messages for a specific user
 exports.getMessages = async (req, res) => {
+  const user_id = req.user.id;
   try {
-    const messages = await Messages.find();
-    res.status(200).json(messages);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Get message by ID
-exports.getMessageById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const message = await Messages.findById({_id:id});
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found' });
+    let user = await User.findOne({ _id: user_id });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-    res.status(200).json(message);
+    const messages = await Messages.find({
+      $or: [
+        { from: user_id },
+        { to: user_id }
+      ]
+    }).populate('from to', '-__v -updatedAt -createdAt');
+
+    res.status(200).json({
+      message: "Messages fetched successfully",
+      messages,
+      user
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -26,9 +28,19 @@ exports.getMessageById = async (req, res) => {
 
 // Create a new message
 exports.createMessage = async (req, res) => {
-  const messageData = req.body;
+  const { to, message, iv, senderEncryptedKey, recipientEncryptedKey } = req.body;
+  const from = req.user.id;
+  if (!from) {
+    return res.status(404).json({ message: 'User not found' });
+  }
   try {
-    const newMessage = await Messages.create(messageData);
+    let newMessage = await Messages.create({
+      from, to, message,
+      iv, senderEncryptedKey, recipientEncryptedKey,
+      readorno: from === to ? true : false,
+      updated: false
+    });
+    newMessage = await newMessage.populate('from to', '-__v');
     res.status(201).json(newMessage);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -38,9 +50,22 @@ exports.createMessage = async (req, res) => {
 // Update message by ID
 exports.updateMessageById = async (req, res) => {
   const { id } = req.params;
-  const messageData = req.body;
+  const { message, iv, senderEncryptedKey, recipientEncryptedKey } = req.body;
+  const user_id = req.user.id;
+  const msg = await Messages.findOne({ _id: id });
+  if (!msg) {
+    return res.status(404).json({ message: 'Message not found' });
+  }
+
+  if (user_id.toString() !== msg.from.toString()) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   try {
-    const updatedMessage = await Messages.findByIdAndUpdate({_id:id}, messageData, { new: true });
+    const updatedMessage = await Messages.findByIdAndUpdate(
+      id,
+      { message, iv, senderEncryptedKey, recipientEncryptedKey, updated: true },
+      { new: true }
+    ).populate('from to', '-__v');
     if (!updatedMessage) {
       return res.status(404).json({ message: 'Message not found' });
     }
@@ -53,8 +78,16 @@ exports.updateMessageById = async (req, res) => {
 // Delete message by ID
 exports.deleteMessageById = async (req, res) => {
   const { id } = req.params;
+  const user_id = req.user.id;
+  const msg = await Messages.findOne({ _id: id });
+  if (!msg) {
+    return res.status(404).json({ message: 'Message not found' });
+  }
+  if (user_id.toString() !== msg.from.toString()) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   try {
-    const deletedMessage = await Messages.findByIdAndDelete({_id:id});
+    const deletedMessage = await Messages.findByIdAndDelete({ _id: id });
     if (!deletedMessage) {
       return res.status(404).json({ message: 'Message not found' });
     }
@@ -63,52 +96,34 @@ exports.deleteMessageById = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-  
-// Delete all messages
-exports.deleteAllMessages = async (req, res) => {
-  try {
-    const msg = await Messages.deleteMany();
-    res.status(200).json({ message: ` ${msg.deletedCount} : All messages deleted successfully`});
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 exports.updateReadOrNoForMessages = async (req, res) => {
-  const { fromEmail, toEmail } = req.body;
+  const { from } = req.body;
+  const user_id = req.user.id;
 
   try {
     const result = await Messages.updateMany(
-      { from: fromEmail, to: toEmail ,readorno:false},
+      { from, to: user_id, readorno: false },
       { readorno: true },
       { new: true, runValidators: true }
     );
-
     res.status(200).json({ message: 'Messages updated successfully', result });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Error marking messages as read', error });
   }
 };
 // Delete messages between two users if they exist
 exports.deleteMessagesBetweenUsers = async (req, res) => {
+  const user_id = req.user.id;
+  const { from } = req.body;
   try {
-    const { Emailuser, FriendReq } = req.body;
-    const messagesExist = await Messages.findOne({
+    await Messages.deleteMany({
       $or: [
-        { from: Emailuser, to: FriendReq },
-        { from: FriendReq, to: Emailuser }
+        { from: user_id, to: from },
+        { from: from, to: user_id }
       ]
     });
-    if (!messagesExist) {
-      return res.status(404).json({ success: false, message: 'No messages found between these users' });
-    }
-    const deleteMessages = await Messages.deleteMany({
-      $or: [
-        { from: Emailuser, to: FriendReq },
-        { from: FriendReq, to: Emailuser }
-      ]
-    });
-    res.status(200).json({ success: true, message: 'Messages between users deleted successfully' });
+    res.status(200).json({ success: true, message: 'deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
