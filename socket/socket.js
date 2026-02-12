@@ -74,6 +74,21 @@ const initializeSocket = (server) => {
             }
         });
 
+        // Typing Status
+        socket.on("typing", (data) => {
+            const receiver = getUser(data.to?._id);
+            if (receiver) {
+                io.to(receiver.socketId).emit("user_typing", { from: data.from });
+            }
+        });
+
+        socket.on("stop_typing", (data) => {
+            const receiver = getUser(data.to?._id);
+            if (receiver) {
+                io.to(receiver.socketId).emit("user_stop_typing", { from: data.from });
+            }
+        });
+
         // Disconnect
         socket.on('disconnect', async () => {
             const user = onlineUsers.find((user) => user.socketId === socket.id);
