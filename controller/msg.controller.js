@@ -63,7 +63,8 @@ exports.updateMessageById = async (req, res) => {
   try {
     const updatedMessage = await Messages.findByIdAndUpdate(
       id,
-      { message, iv, senderEncryptedKey, recipientEncryptedKey, updated: true },
+      { message, iv, senderEncryptedKey, recipientEncryptedKey,
+       updated: true, readorno: false },
       { new: true }
     ).populate('from to', '-__v');
     if (!updatedMessage) {
