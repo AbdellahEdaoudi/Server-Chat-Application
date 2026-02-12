@@ -35,7 +35,7 @@ exports.register = async (req, res) => {
 
         if (req.file) {
             try {
-                const result = await uploadImage(req.file.path);
+                const result = await uploadImage(req.file);
                 profileImage = result.secure_url;
             } catch (uploadError) {
                 console.error("Cloudinary Upload Error:", uploadError);
@@ -195,7 +195,7 @@ exports.updateProfile = async (req, res) => {
             }
 
             try {
-                const result = await uploadImage(req.file.path);
+                const result = await uploadImage(req.file);
                 updateData.profileImage = result.secure_url;
             } catch (uploadError) {
                 console.error("Cloudinary Upload Error:", uploadError);

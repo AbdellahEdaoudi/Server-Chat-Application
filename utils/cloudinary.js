@@ -6,13 +6,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadImage = async (filePath) => {
+const uploadImage = async (file) => {
   try {
-    const fs = require('fs');
-    // Read file and convert to Base64 to avoid stream/path issues on Windows
-    const fileBuffer = fs.readFileSync(filePath);
-    const mimeType = filePath.split('.').pop(); // Simple MIME detection
-    const base64Image = `data:image/${mimeType};base64,${fileBuffer.toString('base64')}`;
+    if (!file || !file.buffer) {
+      throw new Error("No file buffer provided");
+    }
+
+    // Convert buffer to Base64
+    const base64Image = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
     const result = await cloudinary.uploader.upload(base64Image, {
       folder: "Edchatflow",
@@ -20,13 +21,8 @@ const uploadImage = async (filePath) => {
       timeout: 120000 // 120 seconds
     });
 
-    // Delete local file after successful upload
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
     return result;
   } catch (error) {
-    const fs = require('fs');
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     throw error;
   }
 };
