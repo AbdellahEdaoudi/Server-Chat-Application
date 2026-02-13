@@ -6,12 +6,8 @@ const http = require('http');
 const server = http.createServer(app);
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const Messages = require('./models/Messages');
-const upload = require('./utils/multer');
-const MessageController = require("./controller/msg.controller")
-const UserController = require("./controller/user.controller")
-const AuthController = require("./controller/auth.controller")
-const isAuthenticated = require('./middleware/isAuthenticated');
+const initializeSocket = require('./socket/socket');
+
 const PORT = 2222;
 
 app.use(express.json());
@@ -27,14 +23,12 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-const initializeSocket = require('./socket/socket');
+
 const io = initializeSocket(server);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
 
 mongoose.set('strictQuery', true);
 mongoose.connect(process.env.MONGO_URL)
@@ -45,33 +39,22 @@ mongoose.connect(process.env.MONGO_URL)
     console.error(err);
   });
 
-// Auth Routes
-app.post('/register', upload.single('profileImage'), AuthController.register);
-app.post('/login', AuthController.login);
-app.post('/logout', AuthController.logout);
-app.put('/update-profile', isAuthenticated, upload.single('profileImage'), AuthController.updateProfile);
+// Use Routes
+app.use('/', require('./routes/auth.routes'));
+app.use('/', require('./routes/user.routes'));
+app.use('/', require('./routes/message.routes'));
 
-// User Routes
-app.get('/users', isAuthenticated, UserController.getUsers);
-app.delete('/users/:id', UserController.deleteUserById);
-
-// Message routes
-app.post('/get_messages', isAuthenticated, MessageController.getMessages);
-app.post('/messages', isAuthenticated, MessageController.createMessage);
-app.put('/messages/:id', isAuthenticated, MessageController.updateMessageById);
-app.delete('/messages/:id', isAuthenticated, MessageController.deleteMessageById);
-app.put('/readorno', isAuthenticated, MessageController.updateReadOrNoForMessages);
-app.delete('/delete_messages_between_users', isAuthenticated, MessageController.deleteMessagesBetweenUsers);
-
+// Test route (optional to keep here or move)
+const Messages = require('./models/Messages');
 app.get('/test', async (req, res) => {
   const messages = await Messages.find({
-        $or: [
-          { from: "698b9ee28e75b90f18798e06" },
-          { to: "698b9f408e75b90f18798e29" }
-        ]
-      }).populate('from to', '-__v -__v -updatedAt -createdAt -protectedPrivateKey').populate({
-        path: 'replyTo',
-        populate: { path: 'from', select: 'fullname' }
-      });
+    $or: [
+      { from: "698b9ee28e75b90f18798e06" },
+      { to: "698b9f408e75b90f18798e29" }
+    ]
+  }).populate('from to', '-__v -updatedAt -createdAt -protectedPrivateKey').populate({
+    path: 'replyTo',
+    populate: { path: 'from', select: 'fullname' }
+  });
   res.json(messages);
 });

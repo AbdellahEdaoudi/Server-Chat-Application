@@ -2,7 +2,6 @@ const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Messages = require('../models/Messages');
-const fs = require('fs');
 const { uploadImage, cloudinary } = require('../utils/cloudinary');
 
 const isPasswordStrong = (password) => {
