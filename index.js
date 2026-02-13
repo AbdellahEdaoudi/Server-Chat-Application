@@ -64,6 +64,14 @@ app.put('/readorno', isAuthenticated, MessageController.updateReadOrNoForMessage
 app.delete('/delete_messages_between_users', isAuthenticated, MessageController.deleteMessagesBetweenUsers);
 
 app.get('/test', async (req, res) => {
-  const messages = await Messages.find().populate('from to', '-__v -updatedAt -createdAt');
+  const messages = await Messages.find({
+        $or: [
+          { from: "698b9ee28e75b90f18798e06" },
+          { to: "698b9f408e75b90f18798e29" }
+        ]
+      }).populate('from to', '-__v -__v -updatedAt -createdAt -protectedPrivateKey').populate({
+        path: 'replyTo',
+        populate: { path: 'from', select: 'fullname' }
+      });
   res.json(messages);
 });

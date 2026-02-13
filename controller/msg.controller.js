@@ -14,7 +14,10 @@ exports.getMessages = async (req, res) => {
         { from: user_id },
         { to: user_id }
       ]
-    }).populate('from to', '-__v -updatedAt -createdAt');
+    }).populate('from to', '-__v -updatedAt -createdAt -protectedPrivateKey').populate({
+      path: 'replyTo',
+      populate: { path: 'from', select: 'fullname' }
+    });
 
     res.status(200).json({
       message: "Messages fetched successfully",
@@ -28,7 +31,7 @@ exports.getMessages = async (req, res) => {
 
 // Create a new message
 exports.createMessage = async (req, res) => {
-  const { to, message, iv, senderEncryptedKey, recipientEncryptedKey } = req.body;
+  const { to, message, iv, senderEncryptedKey, recipientEncryptedKey, replyTo } = req.body;
   const from = req.user.id;
   if (!from) {
     return res.status(404).json({ message: 'User not found' });
@@ -38,9 +41,16 @@ exports.createMessage = async (req, res) => {
       from, to, message,
       iv, senderEncryptedKey, recipientEncryptedKey,
       readorno: from === to ? true : false,
-      updated: false
+      updated: false,
+      replyTo: replyTo || null
     });
     newMessage = await newMessage.populate('from to', '-__v');
+    if (replyTo) {
+      newMessage = await newMessage.populate({
+        path: 'replyTo',
+        populate: { path: 'from', select: 'fullname' }
+      });
+    }
     res.status(201).json(newMessage);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -60,11 +70,14 @@ exports.updateMessageById = async (req, res) => {
   if (user_id.toString() !== msg.from.toString()) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
+  const itsmymsg = user_id.toString() === msg.from.toString();
   try {
     const updatedMessage = await Messages.findByIdAndUpdate(
       id,
-      { message, iv, senderEncryptedKey, recipientEncryptedKey,
-       updated: true, readorno: false },
+      {
+        message, iv, senderEncryptedKey, recipientEncryptedKey,
+        updated: true, readorno: itsmymsg ? true : false
+      },
       { new: true }
     ).populate('from to', '-__v');
     if (!updatedMessage) {
