@@ -7,10 +7,14 @@ const server = http.createServer(app);
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const initializeSocket = require('./socket/socket');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const PORT = 2222;
 
+app.use(helmet());
 app.use(express.json());
+app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(cors({
   origin: [
