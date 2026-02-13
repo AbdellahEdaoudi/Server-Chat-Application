@@ -14,7 +14,15 @@ const PORT = 2222;
 
 app.use(helmet());
 app.use(express.json());
-app.use(mongoSanitize());
+app.use(express.urlencoded({ extended: true }));
+
+// Manual sanitization to avoid Express 5 Read-only property error on req.query
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  next();
+});
+
 app.use(cookieParser());
 app.use(cors({
   origin: [
