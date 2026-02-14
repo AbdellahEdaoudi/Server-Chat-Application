@@ -228,7 +228,7 @@ exports.updateProfile = async (req, res) => {
             updateData.protectedPrivateKey = protectedPrivateKey;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { returnDocument: 'after' });
 
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found" });

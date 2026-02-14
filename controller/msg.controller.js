@@ -70,7 +70,7 @@ exports.updateMessageById = async (req, res) => {
   if (user_id.toString() !== msg.from.toString()) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  const itsmymsg = user_id.toString() === msg.from.toString();
+  const itsmymsg = user_id.toString() === msg.to.toString();
   try {
     const updatedMessage = await Messages.findByIdAndUpdate(
       id,
@@ -78,7 +78,7 @@ exports.updateMessageById = async (req, res) => {
         message, iv, senderEncryptedKey, recipientEncryptedKey,
         updated: true, readorno: itsmymsg ? true : false
       },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('from to', '-__v');
     if (!updatedMessage) {
       return res.status(404).json({ message: 'Message not found' });
@@ -119,7 +119,7 @@ exports.updateReadOrNoForMessages = async (req, res) => {
     const result = await Messages.updateMany(
       { from, to: user_id, readorno: false },
       { readorno: true },
-      { new: true, runValidators: true }
+      { runValidators: true }
     );
     res.status(200).json({ message: 'Messages updated successfully', result });
   } catch (error) {
