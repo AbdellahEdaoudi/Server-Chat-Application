@@ -39,3 +39,4 @@ server.listen(PORT, () => {
 app.use('/', require('./routes/auth.routes'));
 app.use('/', require('./routes/user.routes'));
 app.use('/', require('./routes/message.routes'));
+app.use('/api', require('./routes/admin.routes'));

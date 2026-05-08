@@ -91,12 +91,12 @@ exports.login = async (req, res) => {
         }
         // Generate Token
         const accessToken = jwt.sign(
-            { UserInfo: { id: user._id, email: user.email } },
+            { UserInfo: { id: user._id, email: user.email, isAdmin: user.isAdmin } },
             process.env.ACCESS_TOKEN_SECRET,
             { expiresIn: "60m" }
         );
         const refreshToken = jwt.sign(
-            { UserInfo: { id: user._id, email: user.email } },
+            { UserInfo: { id: user._id, email: user.email, isAdmin: user.isAdmin } },
             process.env.REFRESH_TOKEN_SECRET,
             { expiresIn: "7d" }
         );

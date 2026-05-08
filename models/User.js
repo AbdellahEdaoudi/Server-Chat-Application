@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
   isOnline: { type: Boolean, default: false },
   publicKey: { type: String, trim: true },
   protectedPrivateKey: { type: String, trim: true },
+  isAdmin: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
